@@ -1,0 +1,83 @@
+{% extends 'chart/base.html' %}
+
+{% block contents %}
+    {% for i in data %}
+        {{i.number}}
+        <hr>
+    {% endfor %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 mx-auto mt-5">
+                {% comment %} <h1 id="app">{{text}}</h1> {% endcomment %}
+                <canvas id="myChart" width="200" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+{% endblock contents %}
+
+
+{% block scripts %}
+
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+
+        var graphData = {
+            type: 'bar',
+            data: {
+                labels: [{% for date in data %}"{{date.date}}",{% endfor %}],
+                datasets: [{
+                    label: '# of Votes',
+                    data: [{% for number in data %} {{number.number}}, {% endfor %}],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                // scales: {
+                //     y: {
+                //         beginAtZero: true
+                //     }
+                // }
+            }
+        }
+
+        const myChart = new Chart(ctx, graphData);
+
+        var socket = new WebSocket('ws://localhost:8000/ws/chart/')
+        socket.onopen = function(){
+            socket.send(JSON.stringify({
+                action:'subscribe_to_chart_activity',
+                request_id: new Date().getTime(),
+            }))
+        }
+        socket.onmessage = function(e){
+            var djangoData = JSON.parse(e.data)
+            console.log(djangoData)
+
+            graphData.data.labels.push(djangoData.date);
+            graphData.data.datasets.forEach((dataset) => {
+                dataset.data.push(djangoData.number);
+            });
+            myChart.update();
+        }
+
+    </script>
+
+{% endblock scripts %}
