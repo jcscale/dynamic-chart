@@ -1,1 +1,1 @@
-# A dynamic chart using websockets
+# A real-time dynamic chart using websockets
